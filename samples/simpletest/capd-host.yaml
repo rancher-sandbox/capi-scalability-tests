@@ -1,0 +1,176 @@
+---
+# DockerCluster object referenced by the Cluster object
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerCluster
+metadata:
+  name: 'test${CLUSTER_NUM}'
+spec:
+  loadBalancer:
+    hostBindAddress: "172.16.1.236"
+    kubeconfigUseHost: true
+  dockerHost: "tcp://172.16.1.236:2375"
+  failureDomains:
+    fd1:
+      controlPlane: true
+    fd2:
+      controlPlane: true
+    fd3:
+      controlPlane: true
+    fd4:
+      controlPlane: false
+    fd5:
+      controlPlane: false
+    fd6:
+      controlPlane: false
+    fd7:
+      controlPlane: false
+    fd8:
+      controlPlane: false
+---
+# Cluster object with
+# - Reference to the KubeadmControlPlane object
+# - the label cni=test${CLUSTER_NUM}-crs-0, so the cluster can be selected by the ClusterResourceSet.
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: 'test${CLUSTER_NUM}'
+  labels:
+    cni: "test${CLUSTER_NUM}-crs-0"
+spec:
+  clusterNetwork:
+    services:
+      cidrBlocks: ['10.128.0.0/12']
+    pods:
+      cidrBlocks: ['192.168.0.0/16']
+    serviceDomain: 'cluster.local'
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    name: 'test${CLUSTER_NUM}'
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    name: "test${CLUSTER_NUM}-control-plane"
+---
+# DockerMachineTemplate object referenced by the KubeadmControlPlane object
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: "test${CLUSTER_NUM}-control-plane"
+spec:
+  template:
+    spec:
+      extraMounts:
+        - containerPath: "/var/run/docker.sock"
+          hostPath: "/var/run/docker.sock"
+---
+# KubeadmControlPlane referenced by the Cluster object with
+# - the label kcp-adoption.step2, because it should be created in the second step of the kcp-adoption test.
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "test${CLUSTER_NUM}-control-plane"
+  labels:
+    kcp-adoption.step2: ""
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  machineTemplate:
+    infrastructureRef:
+      kind: DockerMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      name: "test${CLUSTER_NUM}-control-plane"
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      controllerManager:
+        extraArgs: {enable-hostpath-provisioner: 'true'}
+      apiServer:
+        # host.docker.internal is required by kubetest when running on MacOS because of the way ports are proxied.
+        certSANs: [localhost, 127.0.0.1, 0.0.0.0, host.docker.internal]
+    initConfiguration:
+      nodeRegistration:
+        criSocket: unix:///var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: unix:///var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+  version: "v1.26.3"
+---
+# DockerMachineTemplate referenced by the MachineDeployment and with
+# - extraMounts for the docker sock, thus allowing self-hosting test
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: "test${CLUSTER_NUM}-md-0"
+spec:
+  template:
+    spec:
+      extraMounts:
+        - containerPath: "/var/run/docker.sock"
+          hostPath: "/var/run/docker.sock"
+---
+# KubeadmConfigTemplate referenced by the MachineDeployment
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "test${CLUSTER_NUM}-md-0"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: unix:///var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+---
+# MachineDeployment object
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "test${CLUSTER_NUM}-md-0"
+spec:
+  clusterName: "test${CLUSTER_NUM}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "test${CLUSTER_NUM}"
+      version: "v1.26.3"
+      bootstrap:
+        configRef:
+          name: "test${CLUSTER_NUM}-md-0"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "test${CLUSTER_NUM}-md-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DockerMachineTemplate
+      failureDomain: fd4
+# ---
+# # ConfigMap object referenced by the ClusterResourceSet object and with
+# # the CNI resource defined in the test config file
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: "cni-test${CLUSTER_NUM}-crs-0"
+# data: ${CNI_RESOURCES}
+# binaryData:
+# ---
+# # ClusterResourceSet object with
+# # a selector that targets all the Cluster with label cni=test${CLUSTER_NUM}-crs-0
+# apiVersion: addons.cluster.x-k8s.io/v1beta1
+# kind: ClusterResourceSet
+# metadata:
+#   name:  "test${CLUSTER_NUM}-crs-0"
+# spec:
+#   strategy: ApplyOnce
+#   clusterSelector:
+#     matchLabels:
+#       cni: "test${CLUSTER_NUM}-crs-0"
+#   resources:
+#     - name: "cni-test${CLUSTER_NUM}-crs-0"
+#       kind: ConfigMap
+

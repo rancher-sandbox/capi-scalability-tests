@@ -1,0 +1,4 @@
+providers:
+  - name: "docker-rich"
+    url: "https://github.com/richardcase/cluster-api/releases/${docker_provider_version}/infrastructure-components-development.yaml"
+    type: "InfrastructureProvider"
