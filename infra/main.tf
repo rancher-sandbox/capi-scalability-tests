@@ -21,8 +21,7 @@ provider "aws" {
 
 provider "helm" {
   kubernetes {
-    config_path = "config/capimgmt.yaml"
-    #host                   = "https://${local.capimgmt_san}:6443"
+    host                   = "https://${local.capimgmt_san}:6443"
     client_certificate     = module.secrets.master_user_cert
     client_key             = module.secrets.master_user_key
     cluster_ca_certificate = module.secrets.cluster_ca_certificate

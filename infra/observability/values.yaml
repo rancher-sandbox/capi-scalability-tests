@@ -1,3 +1,14 @@
+kube-state-metrics:
+  rbac:
+    create: true
+    extraRules:
+      - apiGroups: ["cluster.x-k8s.io"]
+        resources: ["clusters", "machinedeployments", "machinesets", "machines", "machinehealthchecks"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["controlplane.cluster.x-k8s.io"]
+        resources: ["kubeadmcontrolplanes"]
+        verbs: ["get", "list", "watch"]
+
 prometheus:
   prometheusSpec:
     additionalScrapeConfigs:
