@@ -5,7 +5,7 @@ set -xe
 # Update limits
 cat >/etc/sysctl.d/90-docker.conf <<EOF
 fs.inotify.max_user_watches=1048576
-fs.inotify.max_user_instances=819
+fs.inotify.max_user_instances=1048576
 EOF
 
 # Reload

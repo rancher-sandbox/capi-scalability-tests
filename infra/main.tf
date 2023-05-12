@@ -12,6 +12,11 @@ terraform {
     helm = {
       source = "hashicorp/helm"
     }
+
+    kubectl = {
+      source = "gavinbunney/kubectl"
+      version = "1.14.0"
+    }
   }
 }
 
@@ -26,6 +31,14 @@ provider "helm" {
     client_key             = module.secrets.master_user_key
     cluster_ca_certificate = module.secrets.cluster_ca_certificate
   }
+}
+
+provider "kubectl" {
+  host                   = "https://${local.capimgmt_san}:6443"
+  cluster_ca_certificate = module.secrets.cluster_ca_certificate
+  client_certificate     = module.secrets.master_user_cert
+  client_key             = module.secrets.master_user_key
+  load_config_file       = false
 }
 
 module "aws_shared" {
@@ -156,6 +169,6 @@ module "docker_install" {
 }
 
 module "observability_install" {
-  depends_on              = [module.docker_install]
+  depends_on              = [module.capimgmt_rke2]
   source                  = "./observability"
 }

@@ -6,9 +6,9 @@ metadata:
   name: 'test${CLUSTER_NUM}'
 spec:
   loadBalancer:
-    hostBindAddress: "172.16.1.236"
+    hostBindAddress: "172.16.1.46"
     kubeconfigUseHost: true
-  dockerHost: "tcp://172.16.1.236:2375"
+  dockerHost: "tcp://172.16.1.46:2375"
   failureDomains:
     fd1:
       controlPlane: true

@@ -1,9 +1,18 @@
 kube-state-metrics:
+  extraArgs:
+    - "--custom-resource-state-config-file=/etc/config/crd-config.yaml"
+  volumeMounts:
+    - mountPath: /etc/config
+      name: config-volume
+  volumes:
+    - configMap:
+        name: kube-state-metrics-crd-config
+      name: config-volume
   rbac:
     create: true
     extraRules:
       - apiGroups: ["cluster.x-k8s.io"]
-        resources: ["clusters", "machinedeployments", "machinesets", "machines", "machinehealthchecks"]
+        resources: ["clusters", "machinedeployments", "machinesets", "machines", "machinehealthchecks", "machinepools"]
         verbs: ["get", "list", "watch"]
       - apiGroups: ["controlplane.cluster.x-k8s.io"]
         resources: ["kubeadmcontrolplanes"]
@@ -35,3 +44,22 @@ prometheus:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
+
+# Don't enable alert manager
+alertmanager:
+  enabled: false
+
+thanosRuler:
+  enabled: false
+
+
+# Disable scraping of things
+
+coreDns:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
