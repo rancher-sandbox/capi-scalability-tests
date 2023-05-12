@@ -21,12 +21,12 @@ terraform {
 }
 
 provider "aws" {
-  region = local.region
+  region = var.region
 }
 
 provider "helm" {
   kubernetes {
-    host                   = "https://${local.capimgmt_san}:6443"
+    host                   = "https://${var.capimgmt_san}:6443"
     client_certificate     = module.secrets.master_user_cert
     client_key             = module.secrets.master_user_key
     cluster_ca_certificate = module.secrets.cluster_ca_certificate
@@ -34,7 +34,7 @@ provider "helm" {
 }
 
 provider "kubectl" {
-  host                   = "https://${local.capimgmt_san}:6443"
+  host                   = "https://${var.capimgmt_san}:6443"
   cluster_ca_certificate = module.secrets.cluster_ca_certificate
   client_certificate     = module.secrets.master_user_cert
   client_key             = module.secrets.master_user_key
@@ -43,15 +43,15 @@ provider "kubectl" {
 
 module "aws_shared" {
   source              = "./aws_shared"
-  project_name        = local.project_name
-  ssh_public_key_path = local.ssh_public_key_path
+  project_name        = var.project_name
+  ssh_public_key_path = var.ssh_public_key_path
 }
 
 module "aws_network" {
   source            = "./aws_network"
-  region            = local.region
-  availability_zone = local.availability_zone
-  project_name      = local.project_name
+  region            = var.region
+  availability_zone = var.availability_zone
+  project_name      = var.project_name
 }
 
 module "secrets" {
@@ -61,45 +61,45 @@ module "secrets" {
 module "bastion" {
   depends_on            = [module.aws_network]
   source                = "./aws_host"
-  ami                   = local.bastion_ami
-  instance_type         = local.bastion_instance_type
-  availability_zone     = local.availability_zone
-  project_name          = local.project_name
+  ami                   = var.bastion_ami
+  instance_type         = var.bastion_instance_type
+  availability_zone     = var.availability_zone
+  project_name          = var.project_name
   name                  = "bastion"
   ssh_key_name          = module.aws_shared.key_name
-  ssh_private_key_path  = local.ssh_private_key_path
+  ssh_private_key_path  = var.ssh_private_key_path
   subnet_id             = module.aws_network.public_subnet_id
   vpc_security_group_id = module.aws_network.public_security_group_id
 }
 
 module "capimgmt_server_nodes" {
   depends_on            = [module.aws_network]
-  count                 = local.capimgmt_server_count
+  count                 = var.capimgmt_server_count
   source                = "./aws_host"
-  ami                   = local.capimgmt_ami
-  instance_type         = local.capimgmt_instance_type
-  availability_zone     = local.availability_zone
-  project_name          = local.project_name
+  ami                   = var.capimgmt_ami
+  instance_type         = var.capimgmt_instance_type
+  availability_zone     = var.availability_zone
+  project_name          = var.project_name
   name                  = "capi-management-server-node-${count.index}"
   ssh_key_name          = module.aws_shared.key_name
-  ssh_private_key_path  = local.ssh_private_key_path
+  ssh_private_key_path  = var.ssh_private_key_path
   subnet_id             = module.aws_network.private_subnet_id
   vpc_security_group_id = module.aws_network.private_security_group_id
   ssh_bastion_host      = module.bastion.public_name
-  ssh_tunnels           = count.index == 0 ? [[local.capimgmt_local_port, 6443], [3000, 443]] : []
+  ssh_tunnels           = count.index == 0 ? [[var.capimgmt_local_port, 6443], [3000, 443]] : []
 }
 
 module "capimgmt_agent_nodes" {
   depends_on            = [module.aws_network]
-  count                 = local.capimgmt_agent_count
+  count                 = var.capimgmt_agent_count
   source                = "./aws_host"
-  ami                   = local.capimgmt_ami
-  instance_type         = local.capimgmt_instance_type
-  availability_zone     = local.availability_zone
-  project_name          = local.project_name
+  ami                   = var.capimgmt_ami
+  instance_type         = var.capimgmt_instance_type
+  availability_zone     = var.availability_zone
+  project_name          = var.project_name
   name                  = "capi-management-agent-node-${count.index}"
   ssh_key_name          = module.aws_shared.key_name
-  ssh_private_key_path  = local.ssh_private_key_path
+  ssh_private_key_path  = var.ssh_private_key_path
   subnet_id             = module.aws_network.private_subnet_id
   vpc_security_group_id = module.aws_network.private_security_group_id
   ssh_bastion_host      = module.bastion.public_name
@@ -107,19 +107,19 @@ module "capimgmt_agent_nodes" {
 
 module "capimgmt_rke2" {
   source       = "./rke2"
-  project      = local.project_name
+  project      = var.project_name
   name         = "capimgmt"
   server_names = [for node in module.capimgmt_server_nodes : node.private_name]
   agent_names  = [for node in module.capimgmt_agent_nodes : node.private_name]
-  sans         = [local.capimgmt_san]
+  sans         = [var.capimgmt_san]
 
-  ssh_private_key_path = local.ssh_private_key_path
+  ssh_private_key_path = var.ssh_private_key_path
   ssh_bastion_host     = module.bastion.public_name
-  ssh_local_port       = local.capimgmt_local_port
+  ssh_local_port       = var.capimgmt_local_port
 
-  rke2_version        = local.capimgmt_rke2_version
-  max_pods            = local.capimgmt_max_pods
-  node_cidr_mask_size = local.capimgmt_node_cidr_mask_size
+  rke2_version        = var.capimgmt_rke2_version
+  max_pods            = var.capimgmt_max_pods
+  node_cidr_mask_size = var.capimgmt_node_cidr_mask_size
 
   client_ca_key          = module.secrets.client_ca_key
   client_ca_cert         = module.secrets.client_ca_cert
@@ -135,23 +135,23 @@ module "capimgmt_install" {
   depends_on              = [module.capimgmt_rke2]
   source                  = "./capi_management"
   server_names            = [for node in module.capimgmt_server_nodes : node.private_name]
-  docker_provider_version = local.capi_docker_provider_version
+  capi_infra_providers    = var.capi_infra_providers
   
-  ssh_private_key_path    = local.ssh_private_key_path
+  ssh_private_key_path    = var.ssh_private_key_path
   ssh_bastion_host        = module.bastion.public_name
 }
 
 module "docker_hosts" {
   depends_on            = [module.aws_network]
-  count                 = local.dockerhost_server_count
+  count                 = var.dockerhost_server_count
   source                = "./aws_host"
-  ami                   = local.dockerhost_ami
-  instance_type         = local.dockerhost_instance_type
-  availability_zone     = local.availability_zone
-  project_name          = local.project_name
+  ami                   = var.dockerhost_ami
+  instance_type         = var.dockerhost_instance_type
+  availability_zone     = var.availability_zone
+  project_name          = var.project_name
   name                  = "docker-host-${count.index}"
   ssh_key_name          = module.aws_shared.key_name
-  ssh_private_key_path  = local.ssh_private_key_path
+  ssh_private_key_path  = var.ssh_private_key_path
   subnet_id             = module.aws_network.private_subnet_id
   vpc_security_group_id = module.aws_network.private_security_group_id
   ssh_bastion_host      = module.bastion.public_name
@@ -159,16 +159,32 @@ module "docker_hosts" {
 
 module "docker_install" {
   depends_on            = [module.docker_hosts]
-  source                = "./docker"
+  source                = "./docker_install"
 
   server_names          = [for node in module.docker_hosts : node.private_name]
   private_ips           = [for node in module.docker_hosts : node.private_ip]
 
-  ssh_private_key_path    = local.ssh_private_key_path
+  ssh_private_key_path    = var.ssh_private_key_path
+  ssh_bastion_host        = module.bastion.public_name
+}
+
+module "docker_node_exporter" {
+  depends_on            = [module.docker_hosts]
+  source                = "./node_exporter"
+
+  server_names          = [for node in module.docker_hosts : node.private_name]
+  private_ips           = [for node in module.docker_hosts : node.private_ip]
+
+  ssh_private_key_path    = var.ssh_private_key_path
   ssh_bastion_host        = module.bastion.public_name
 }
 
 module "observability_install" {
-  depends_on              = [module.capimgmt_rke2]
+  depends_on              = [
+    module.capimgmt_install,
+    module.docker_node_exporter
+  ]
   source                  = "./observability"
+
+  docker_hosts = [for node in module.docker_hosts : node.private_name]
 }

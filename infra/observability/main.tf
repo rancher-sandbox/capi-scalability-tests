@@ -23,7 +23,9 @@ resource "helm_release" "prometheus-stack" {
   create_namespace = false
 
   values = [
-    "${file("${path.module}/values.yaml")}"
+    "${templatefile("${path.module}/values.tftpl", {
+      docker_hosts = var.docker_hosts
+  })}"
   ]
 
   depends_on = [ 

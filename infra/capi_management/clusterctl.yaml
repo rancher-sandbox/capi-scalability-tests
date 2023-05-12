@@ -1,4 +1,7 @@
 providers:
   - name: "docker-rich"
-    url: "https://github.com/richardcase/cluster-api/releases/${docker_provider_version}/infrastructure-components-development.yaml"
+    url: "https://github.com/richardcase/cluster-api/releases/v99.1.0-rich1/infrastructure-components-development.yaml"
+    type: "InfrastructureProvider"
+  - name: "kubemark"
+    url: "https://github.com/kubernetes-sigs/cluster-api-provider-kubemark/releases/v0.5.0/infrastructure-components.yaml"
     type: "InfrastructureProvider"

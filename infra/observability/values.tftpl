@@ -21,6 +21,12 @@ kube-state-metrics:
 prometheus:
   prometheusSpec:
     additionalScrapeConfigs:
+      - job_name: docker-hosts
+        static_configs: 
+        - targets:
+%{~ for host in docker_hosts }
+            - "${host}:9100"
+%{ endfor ~}
       - job_name: 'capi-providers'
         # 15s is a bit often for production but helps to get metrics quicker for development.
         scrape_interval: 15s

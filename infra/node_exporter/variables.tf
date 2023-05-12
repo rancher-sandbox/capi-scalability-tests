@@ -1,11 +1,11 @@
 variable "server_names" {
-  description = "List of names of server nodes"
+  description = "List of names of servers to deploy the node agent to"
   type        = list(string)
 }
 
-variable "capi_infra_providers" {
-  description = "The CAPI infratrsucture providers to enable"
-  type = string
+variable "private_ips" {
+  description = "List of private ip addresses for the servers"
+  type        = list(string)
 }
 
 variable "ssh_private_key_path" {

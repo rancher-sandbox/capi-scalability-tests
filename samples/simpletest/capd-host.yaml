@@ -3,12 +3,12 @@
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
 metadata:
-  name: 'test${CLUSTER_NUM}'
+  name: 'test-${PREFIX}-${CLUSTER_NUM}'
 spec:
   loadBalancer:
-    hostBindAddress: "172.16.1.46"
+    hostBindAddress: "${HOST}"
     kubeconfigUseHost: true
-  dockerHost: "tcp://172.16.1.46:2375"
+  dockerHost: "tcp://${HOST}:2375"
   failureDomains:
     fd1:
       controlPlane: true
@@ -29,13 +29,13 @@ spec:
 ---
 # Cluster object with
 # - Reference to the KubeadmControlPlane object
-# - the label cni=test${CLUSTER_NUM}-crs-0, so the cluster can be selected by the ClusterResourceSet.
+# - the label cni=test-${PREFIX}-${CLUSTER_NUM}-crs-0, so the cluster can be selected by the ClusterResourceSet.
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: 'test${CLUSTER_NUM}'
+  name: 'test-${PREFIX}-${CLUSTER_NUM}'
   labels:
-    cni: "test${CLUSTER_NUM}-crs-0"
+    cni: "test-${PREFIX}-${CLUSTER_NUM}-crs-0"
 spec:
   clusterNetwork:
     services:
@@ -46,17 +46,17 @@ spec:
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerCluster
-    name: 'test${CLUSTER_NUM}'
+    name: 'test-${PREFIX}-${CLUSTER_NUM}'
   controlPlaneRef:
     kind: KubeadmControlPlane
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    name: "test${CLUSTER_NUM}-control-plane"
+    name: "test-${PREFIX}-${CLUSTER_NUM}-control-plane"
 ---
 # DockerMachineTemplate object referenced by the KubeadmControlPlane object
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
-  name: "test${CLUSTER_NUM}-control-plane"
+  name: "test-${PREFIX}-${CLUSTER_NUM}-control-plane"
 spec:
   template:
     spec:
@@ -69,7 +69,7 @@ spec:
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 metadata:
-  name: "test${CLUSTER_NUM}-control-plane"
+  name: "test-${PREFIX}-${CLUSTER_NUM}-control-plane"
   labels:
     kcp-adoption.step2: ""
 spec:
@@ -78,7 +78,7 @@ spec:
     infrastructureRef:
       kind: DockerMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      name: "test${CLUSTER_NUM}-control-plane"
+      name: "test-${PREFIX}-${CLUSTER_NUM}-control-plane"
   kubeadmConfigSpec:
     clusterConfiguration:
       controllerManager:
@@ -103,7 +103,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
-  name: "test${CLUSTER_NUM}-md-0"
+  name: "test-${PREFIX}-${CLUSTER_NUM}-md-0"
 spec:
   template:
     spec:
@@ -115,7 +115,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: "test${CLUSTER_NUM}-md-0"
+  name: "test-${PREFIX}-${CLUSTER_NUM}-md-0"
 spec:
   template:
     spec:
@@ -129,23 +129,23 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: "test${CLUSTER_NUM}-md-0"
+  name: "test-${PREFIX}-${CLUSTER_NUM}-md-0"
 spec:
-  clusterName: "test${CLUSTER_NUM}"
+  clusterName: "test-${PREFIX}-${CLUSTER_NUM}"
   replicas: ${WORKER_MACHINE_COUNT}
   selector:
     matchLabels:
   template:
     spec:
-      clusterName: "test${CLUSTER_NUM}"
+      clusterName: "test-${PREFIX}-${CLUSTER_NUM}"
       version: "v1.26.3"
       bootstrap:
         configRef:
-          name: "test${CLUSTER_NUM}-md-0"
+          name: "test-${PREFIX}-${CLUSTER_NUM}-md-0"
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: KubeadmConfigTemplate
       infrastructureRef:
-        name: "test${CLUSTER_NUM}-md-0"
+        name: "test-${PREFIX}-${CLUSTER_NUM}-md-0"
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: DockerMachineTemplate
       failureDomain: fd4
@@ -155,22 +155,22 @@ spec:
 # apiVersion: v1
 # kind: ConfigMap
 # metadata:
-#   name: "cni-test${CLUSTER_NUM}-crs-0"
+#   name: "cni-test-${PREFIX}-${CLUSTER_NUM}-crs-0"
 # data: ${CNI_RESOURCES}
 # binaryData:
 # ---
 # # ClusterResourceSet object with
-# # a selector that targets all the Cluster with label cni=test${CLUSTER_NUM}-crs-0
+# # a selector that targets all the Cluster with label cni=test-${PREFIX}-${CLUSTER_NUM}-crs-0
 # apiVersion: addons.cluster.x-k8s.io/v1beta1
 # kind: ClusterResourceSet
 # metadata:
-#   name:  "test${CLUSTER_NUM}-crs-0"
+#   name:  "test-${PREFIX}-${CLUSTER_NUM}-crs-0"
 # spec:
 #   strategy: ApplyOnce
 #   clusterSelector:
 #     matchLabels:
-#       cni: "test${CLUSTER_NUM}-crs-0"
+#       cni: "test-${PREFIX}-${CLUSTER_NUM}-crs-0"
 #   resources:
-#     - name: "cni-test${CLUSTER_NUM}-crs-0"
+#     - name: "cni-test-${PREFIX}-${CLUSTER_NUM}-crs-0"
 #       kind: ConfigMap
 

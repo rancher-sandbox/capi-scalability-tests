@@ -22,16 +22,14 @@ resource "ssh_sensitive_resource" "clusterctl_init" {
 
   file {
     content  = templatefile("${path.module}/init.sh", {
-        docker_provider_version = var.docker_provider_version
+        capi_infra_providers = var.capi_infra_providers
     })
     destination = "/root/init.sh"
     permissions = "0700"
   }
 
   file {
-    content  = templatefile("${path.module}/clusterctl.yaml", {
-        docker_provider_version = var.docker_provider_version
-    })
+    content  = file("${path.module}/clusterctl.yaml")
     destination = "/root/clusterctl.yaml"
     permissions = "0644"
   }
