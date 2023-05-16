@@ -1,7 +1,7 @@
 resource "local_file" "docker_host_list" {
   content = <<-EOT
-    %{~ for host in var.server_names }
-      ${host}
+    %{~ for ip in var.private_ips }
+${ip}
     %{ endfor ~}
   EOT
 

@@ -7,7 +7,7 @@ variable "project_name" {
 variable "capi_infra_providers" {
   description = "The CAPI infratrsucture providers to enable"
   type        = string
-  default     = "docker-rich:v99.1.0-rich1"
+  default     = "docker-rich:v99.1.0-rich2"
 }
 
 variable "region" {
