@@ -23,6 +23,9 @@ resource "ssh_sensitive_resource" "clusterctl_init" {
   file {
     content  = templatefile("${path.module}/init.sh", {
         capi_infra_providers = var.capi_infra_providers
+        capi_kube_api_burst = var.capi_kube_api_burst
+        capi_kube_api_qps = var.capi_kube_api_qps
+        capi_concurrency = var.capi_concurrency
     })
     destination = "/root/init.sh"
     permissions = "0700"

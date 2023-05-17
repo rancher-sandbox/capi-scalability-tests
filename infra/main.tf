@@ -135,7 +135,11 @@ module "capimgmt_install" {
   depends_on              = [module.capimgmt_rke2]
   source                  = "./capi_management"
   server_names            = [for node in module.capimgmt_server_nodes : node.private_name]
+  
   capi_infra_providers    = var.capi_infra_providers
+  capi_kube_api_burst     = var.capi_kube_api_burst
+  capi_kube_api_qps       = var.capi_kube_api_qps
+  capi_concurrency        = var.capi_concurrency
   
   ssh_private_key_path    = var.ssh_private_key_path
   ssh_bastion_host        = module.bastion.public_name
@@ -171,6 +175,7 @@ module "docker_install" {
 module "docker_node_exporter" {
   depends_on            = [module.docker_hosts]
   source                = "./node_exporter"
+  count                 = var.dockerhost_deploy_nodeexporter ? 1 : 0
 
   server_names          = [for node in module.docker_hosts : node.private_name]
   private_ips           = [for node in module.docker_hosts : node.private_ip]

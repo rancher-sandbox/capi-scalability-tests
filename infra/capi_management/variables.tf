@@ -17,3 +17,18 @@ variable "ssh_bastion_host" {
   description = "Public name of the SSH bastion host. Leave null for publicly accessible instances"
   default     = null
 }
+
+variable "capi_concurrency" {
+  description = "The controller concurrency level for CAPI"
+  type        = number
+}
+
+variable "capi_kube_api_qps" {
+  description = "The qps for the rest client"
+  type        = number
+}
+
+variable "capi_kube_api_burst" {
+  description = "The burst rate for the rest client"
+  type        = number
+}

@@ -1,0 +1,151 @@
+---
+# DockerCluster object referenced by the Cluster object
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerCluster
+metadata:
+  name: 'test-$cluster_num'
+spec:
+  loadBalancer:
+    hostBindAddress: "$host"
+    kubeconfigUseHost: true
+  dockerHost: "tcp://$host:2375"
+  failureDomains:
+    fd1:
+      controlPlane: true
+    fd2:
+      controlPlane: true
+    fd3:
+      controlPlane: true
+    fd4:
+      controlPlane: false
+    fd5:
+      controlPlane: false
+    fd6:
+      controlPlane: false
+    fd7:
+      controlPlane: false
+    fd8:
+      controlPlane: false
+---
+# Cluster object with
+# - Reference to the KubeadmControlPlane object
+# - the label cni=test-$cluster_num-crs-0, so the cluster can be selected by the ClusterResourceSet.
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: 'test-$cluster_num'
+spec:
+  clusterNetwork:
+    services:
+      cidrBlocks: ['10.128.0.0/12']
+    pods:
+      cidrBlocks: ['192.168.0.0/16']
+    serviceDomain: 'cluster.local'
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    name: 'test-$cluster_num'
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    name: "test-$cluster_num-control-plane"
+---
+# DockerMachineTemplate object referenced by the KubeadmControlPlane object
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: "test-$cluster_num-control-plane"
+spec:
+  template:
+    spec:
+      extraMounts:
+        - containerPath: "/var/run/docker.sock"
+          hostPath: "/var/run/docker.sock"
+---
+# KubeadmControlPlane referenced by the Cluster object with
+# - the label kcp-adoption.step2, because it should be created in the second step of the kcp-adoption test.
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "test-$cluster_num-control-plane"
+  labels:
+    kcp-adoption.step2: ""
+spec:
+  replicas: $control_plane_machine_count
+  machineTemplate:
+    infrastructureRef:
+      kind: DockerMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      name: "test-$cluster_num-control-plane"
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      controllerManager:
+        extraArgs: {enable-hostpath-provisioner: 'true'}
+      apiServer:
+        # host.docker.internal is required by kubetest when running on MacOS because of the way ports are proxied.
+        certSANs: [localhost, 127.0.0.1, 0.0.0.0, host.docker.internal]
+    initConfiguration:
+      nodeRegistration:
+        criSocket: unix:///var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: unix:///var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+  version: "v1.26.3"
+---
+# DockerMachineTemplate referenced by the MachineDeployment and with
+# - extraMounts for the docker sock, thus allowing self-hosting test
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: "test-$cluster_num-md-0"
+spec:
+  template:
+    spec:
+      extraMounts:
+        - containerPath: "/var/run/docker.sock"
+          hostPath: "/var/run/docker.sock"
+---
+# KubeadmConfigTemplate referenced by the MachineDeployment
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "test-$cluster_num-md-0"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: unix:///var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+---
+# MachineDeployment object
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "test-$cluster_num-md-0"
+spec:
+  clusterName: "test-$cluster_num"
+  replicas: $worker_machine_count
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "test-$cluster_num"
+      version: "v1.26.3"
+      bootstrap:
+        configRef:
+          name: "test-$cluster_num-md-0"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "test-$cluster_num-md-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DockerMachineTemplate
+      failureDomain: fd4
+
+

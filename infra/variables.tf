@@ -91,6 +91,11 @@ variable "dockerhost_ami" {
   default = "ami-09744628bed84e434" // Canonical, Ubuntu, 22.04 LTS, amd64 jammy image build on 2023-03-25
 }
 
+variable "dockerhost_deploy_nodeexporter" {
+  type    = bool
+  default = true 
+}
+
 variable "ssh_private_key_path" {
   type    = string
   default = "~/.ssh/id_ed25519"
@@ -99,4 +104,22 @@ variable "ssh_private_key_path" {
 variable "ssh_public_key_path" {
   type    = string
   default = "~/.ssh/id_ed25519.pub"
+}
+
+variable "capi_concurrency" {
+  description = "The controller concurrency level for CAPI"
+  type        = number
+  default     = 10
+}
+
+variable "capi_kube_api_qps" {
+  description = "The qps for the rest client"
+  type        = number
+  default     = 20
+}
+
+variable "capi_kube_api_burst" {
+  description = "The burst rate for the rest client"
+  type        = number
+  default     = 30
 }
