@@ -3,6 +3,7 @@ import time
 import click
 import os
 from subprocess import run, PIPE, Popen
+from datetime import datetime
 
 @click.command()
 @click.option("-d", "--docker-hosts", required=True, type=click.File('r'), help="A path to a file containing the docker hosts to use")
@@ -11,7 +12,9 @@ from subprocess import run, PIPE, Popen
 @click.option("-s", "--step", default=1, type=int)
 @click.option('-k', '--kubeconfig', required=True)
 @click.option('--start', default=0, type=int)
-def generate(docker_hosts, template, num, step, kubeconfig, start):
+@click.option('--multi-ns', is_flag=True, show_default=True, default=False, help="If true will create a namespace per cluster")
+def generate(docker_hosts, template, num, step, kubeconfig, start, multi_ns):
+    start =  datetime.now()
     hostips=[]
     for line in docker_hosts:
         ip = line.strip()
@@ -31,15 +34,19 @@ def generate(docker_hosts, template, num, step, kubeconfig, start):
         tokens = dict(cluster_num=cluster_num,host=host_ip,worker_machine_count=1,control_plane_machine_count=1)
         src = Template(template_contents)
         result = src.substitute(tokens)
-        
-        kubectl_command=['kubectl', '--kubeconfig', kubeconfig, 'apply', '-f', '-'] #, '--dry-run=server']
+        namespace='default'
+        if multi_ns:
+            namespace=f'ns${cluster_num}'
+            create_namespace(namespace, kubeconfig)
+
+        kubectl_command=['kubectl', '--kubeconfig', kubeconfig, '-n', namespace, 'apply', '-f', '-', '--dry-run=server']
         p = run(kubectl_command, input=result, encoding='ascii')
         if p.returncode != 0:
             raise Exception(f'No zero return code from kubectl command: {p.returncode}')
 
         if cluster_num % step == 0:
             while True:
-                kubectl_command_get=f'kubectl --kubeconfig {kubeconfig} get Machines -o custom-columns="POD-NAME":.metadata.name,"PHASE":.status.phase | grep -v POD-NAME | grep -v Running | wc -l'
+                kubectl_command_get=f'kubectl --kubeconfig {kubeconfig} get Machines -A -o custom-columns="POD-NAME":.metadata.name,"PHASE":.status.phase | grep -v POD-NAME | grep -v Running | wc -l'
                 proc = Popen(kubectl_command_get, shell=True, stdout=PIPE, stderr=PIPE)
                 outs, errs = proc.communicate(None)
                 if len(errs) != 0:
@@ -55,7 +62,15 @@ def generate(docker_hosts, template, num, step, kubeconfig, start):
         if current_ip_index == len(hostips):
             current_ip_index=0
 
-    click.echo("Finished")
+    end = datetime.now()
+    delta = end - start
+    click.echo(f'Finished in {delta.total_seconds()}')
+
+def create_namespace(name, kubeconfig):
+    kubectl_command=['kubectl', '--kubeconfig', kubeconfig, 'create', 'namespace', name, '--dry-run=server']
+    p = run(kubectl_command, input=result, encoding='ascii')
+    if p.returncode != 0:
+        raise Exception(f'No zero return code from kubectl command to create namespace: {p.returncode}')
 
 
 if __name__=='__main__':

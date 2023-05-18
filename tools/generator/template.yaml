@@ -4,6 +4,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
 metadata:
   name: 'test-$cluster_num'
+  namespace: $namespace
 spec:
   loadBalancer:
     hostBindAddress: "$host"
@@ -34,6 +35,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: 'test-$cluster_num'
+  namespace: $namespace
 spec:
   clusterNetwork:
     services:
@@ -55,6 +57,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: "test-$cluster_num-control-plane"
+  namespace: $namespace
 spec:
   template:
     spec:
@@ -68,6 +71,7 @@ kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 metadata:
   name: "test-$cluster_num-control-plane"
+  namespace: $namespace
   labels:
     kcp-adoption.step2: ""
 spec:
@@ -102,6 +106,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: "test-$cluster_num-md-0"
+  namespace: $namespace
 spec:
   template:
     spec:
@@ -114,6 +119,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: "test-$cluster_num-md-0"
+  namespace: $namespace
 spec:
   template:
     spec:
@@ -128,6 +134,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: "test-$cluster_num-md-0"
+  namespace: $namespace
 spec:
   clusterName: "test-$cluster_num"
   replicas: $worker_machine_count
