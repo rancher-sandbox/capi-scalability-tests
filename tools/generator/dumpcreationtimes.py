@@ -10,15 +10,18 @@ def teardown(kubeconfig):
     if os.path.exists(kubeconfig) == False:
         raise Exception("Kubeconfig file doesn't exist")
     
-    get_clusters_cmd=f'kubectl --kubeconfig {kubeconfig} get Clusters --no-headers -o=custom-columns=":metadata.name"'
+    get_clusters_cmd=f'kubectl --kubeconfig {kubeconfig} get Clusters -A --no-headers -o=custom-columns=":metadata.name,:metadata.namespace"'
     proc = Popen(get_clusters_cmd, shell=True, stdout=PIPE, stderr=PIPE)
     outs, errs = proc.communicate(None)
     if len(errs) != 0:
         raise Exception("error getting clusters")
     print('cluster,cpinitdelta,readydelat,createtime,inittime,readytime')
     for line in outs.splitlines():
-        name=line.decode('utf-8')
-        get_cluster_cmd=f'kubectl --kubeconfig {kubeconfig} get Cluster {name} -o json'
+        line_decoded=line.decode('utf-8')
+        items = line_decoded.split()
+        name = items[0]
+        namespace = items[1]
+        get_cluster_cmd=f'kubectl --kubeconfig {kubeconfig} --namespace {namespace} get Cluster {name} -o json'
         proc = Popen(get_cluster_cmd, shell=True, stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate(None)
         if len(errs) != 0:

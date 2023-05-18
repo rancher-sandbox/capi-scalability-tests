@@ -14,7 +14,7 @@ from datetime import datetime
 @click.option('--start', default=0, type=int)
 @click.option('--multi-ns', is_flag=True, show_default=True, default=False, help="If true will create a namespace per cluster")
 def generate(docker_hosts, template, num, step, kubeconfig, start, multi_ns):
-    start =  datetime.now()
+    startTime =  datetime.now()
     hostips=[]
     for line in docker_hosts:
         ip = line.strip()
@@ -30,16 +30,17 @@ def generate(docker_hosts, template, num, step, kubeconfig, start, multi_ns):
     template_contents = template.read()
     current_ip_index=0
     for cluster_num in range(start, num):
-        host_ip=hostips[current_ip_index]
-        tokens = dict(cluster_num=cluster_num,host=host_ip,worker_machine_count=1,control_plane_machine_count=1)
-        src = Template(template_contents)
-        result = src.substitute(tokens)
         namespace='default'
         if multi_ns:
-            namespace=f'ns${cluster_num}'
+            namespace=f'ns{cluster_num}'
             create_namespace(namespace, kubeconfig)
+        host_ip=hostips[current_ip_index]
+        tokens = dict(cluster_num=cluster_num,host=host_ip,worker_machine_count=1,control_plane_machine_count=1, namespace=namespace)
+        src = Template(template_contents)
+        result = src.substitute(tokens)
+        
 
-        kubectl_command=['kubectl', '--kubeconfig', kubeconfig, '-n', namespace, 'apply', '-f', '-', '--dry-run=server']
+        kubectl_command=['kubectl', '--kubeconfig', kubeconfig, '-n', namespace, 'apply', '-f', '-'] #, '--dry-run=server']
         p = run(kubectl_command, input=result, encoding='ascii')
         if p.returncode != 0:
             raise Exception(f'No zero return code from kubectl command: {p.returncode}')
@@ -62,13 +63,13 @@ def generate(docker_hosts, template, num, step, kubeconfig, start, multi_ns):
         if current_ip_index == len(hostips):
             current_ip_index=0
 
-    end = datetime.now()
-    delta = end - start
+    endTime = datetime.now()
+    delta = endTime - startTime
     click.echo(f'Finished in {delta.total_seconds()}')
 
 def create_namespace(name, kubeconfig):
-    kubectl_command=['kubectl', '--kubeconfig', kubeconfig, 'create', 'namespace', name, '--dry-run=server']
-    p = run(kubectl_command, input=result, encoding='ascii')
+    kubectl_command=['kubectl', '--kubeconfig', kubeconfig, 'create', 'namespace', name] #, '--dry-run=server']
+    p = run(kubectl_command)
     if p.returncode != 0:
         raise Exception(f'No zero return code from kubectl command to create namespace: {p.returncode}')
 
