@@ -20,13 +20,32 @@ kube-state-metrics:
 
 prometheus:
   prometheusSpec:
+%{ if node_label_name != "" ~}
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ${node_label_name}
+              operator: In
+              values:
+              - ${node_label_value}
+%{ endif ~}
+%{ if node_toleration != "" ~}
+    tolerations:
+      - key: "${node_toleration}"
+        operator: "Exists"
+        effect: "NoSchedule"
+%{ endif ~}
     additionalScrapeConfigs:
+%{ if length(docker_hosts) > 0 ~}
       - job_name: docker-hosts
         static_configs: 
         - targets:
 %{~ for host in docker_hosts }
             - "${host}:9100"
 %{ endfor ~}
+%{endif ~}
       - job_name: 'capi-providers'
         # 15s is a bit often for production but helps to get metrics quicker for development.
         scrape_interval: 15s
@@ -58,7 +77,6 @@ alertmanager:
 thanosRuler:
   enabled: false
 
-
 # Disable scraping of things
 
 coreDns:
@@ -69,3 +87,23 @@ kubeScheduler:
 
 kubeProxy:
   enabled: false
+
+prometheusOperator:
+  %{ if node_label_name != "" ~}
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: ${node_label_name}
+            operator: In
+            values:
+            - ${node_label_value}
+  %{ endif ~}
+
+  %{ if node_toleration != "" ~}
+  tolerations:
+    - key: "${node_toleration}"
+      operator: "Exists"
+      effect: "NoSchedule"
+  %{ endif ~}

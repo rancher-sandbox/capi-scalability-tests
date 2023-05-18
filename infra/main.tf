@@ -105,12 +105,27 @@ module "capimgmt_agent_nodes" {
   ssh_bastion_host      = module.bastion.public_name
 }
 
-module "capimgmt_rke2" {
-  source       = "./rke2"
+module "capimgmt_agent_nodes_observability" {
+  depends_on            = [module.aws_network]
+  count                 = var.capimgmt_agent_observability_count
+  source                = "./aws_host"
+  ami                   = var.capimgmt_ami
+  instance_type         = var.capimgmt_instance_type
+  availability_zone     = var.availability_zone
+  project_name          = var.project_name
+  name                  = "capi-management-agent-node-observability-${count.index}"
+  ssh_key_name          = module.aws_shared.key_name
+  ssh_private_key_path  = var.ssh_private_key_path
+  subnet_id             = module.aws_network.private_subnet_id
+  vpc_security_group_id = module.aws_network.private_security_group_id
+  ssh_bastion_host      = module.bastion.public_name
+}
+
+module "capimgmt_server" {
+  source       = "./rke2_server"
   project      = var.project_name
   name         = "capimgmt"
   server_names = [for node in module.capimgmt_server_nodes : node.private_name]
-  agent_names  = [for node in module.capimgmt_agent_nodes : node.private_name]
   sans         = [var.capimgmt_san]
 
   ssh_private_key_path = var.ssh_private_key_path
@@ -131,8 +146,65 @@ module "capimgmt_rke2" {
   master_user_key        = module.secrets.master_user_key
 }
 
+module "capimgmt_agent_capi" {
+  source             = "./rke2_agent"
+  project            = var.project_name
+  name               = "capimgmt"
+  server_name        = module.capimgmt_server_nodes[0].private_name
+  agent_names        = [for node in module.capimgmt_agent_nodes : node.private_name]
+  sans               = [var.capimgmt_san]
+  registration_token = module.capimgmt_server.registration_token
+
+  ssh_private_key_path = var.ssh_private_key_path
+  ssh_bastion_host     = module.bastion.public_name
+  ssh_local_port       = var.capimgmt_local_port
+
+  rke2_version        = var.capimgmt_rke2_version
+  max_pods            = var.capimgmt_max_pods
+  node_cidr_mask_size = var.capimgmt_node_cidr_mask_size
+
+  client_ca_key          = module.secrets.client_ca_key
+  client_ca_cert         = module.secrets.client_ca_cert
+  server_ca_key          = module.secrets.server_ca_key
+  server_ca_cert         = module.secrets.server_ca_cert
+  request_header_ca_key  = module.secrets.request_header_ca_key
+  request_header_ca_cert = module.secrets.request_header_ca_cert
+  master_user_cert       = module.secrets.master_user_cert
+  master_user_key        = module.secrets.master_user_key
+}
+
+module "capimgmt_agent_observability" {
+  source             = "./rke2_agent"
+  project            = var.project_name
+  name               = "capimgmt"
+  server_name        = module.capimgmt_server_nodes[0].private_name
+  agent_names        = [for node in module.capimgmt_agent_nodes_observability : node.private_name]
+  sans               = [var.capimgmt_san]
+  registration_token = module.capimgmt_server.registration_token
+
+  ssh_private_key_path = var.ssh_private_key_path
+  ssh_bastion_host     = module.bastion.public_name
+  ssh_local_port       = var.capimgmt_local_port
+
+  rke2_version        = var.capimgmt_rke2_version
+  max_pods            = var.capimgmt_max_pods
+  node_cidr_mask_size = var.capimgmt_node_cidr_mask_size
+
+  client_ca_key          = module.secrets.client_ca_key
+  client_ca_cert         = module.secrets.client_ca_cert
+  server_ca_key          = module.secrets.server_ca_key
+  server_ca_cert         = module.secrets.server_ca_cert
+  request_header_ca_key  = module.secrets.request_header_ca_key
+  request_header_ca_cert = module.secrets.request_header_ca_cert
+  master_user_cert       = module.secrets.master_user_cert
+  master_user_key        = module.secrets.master_user_key
+
+  node_labels = ["testing.rancherlabs.io/role=observability"]
+  node_taints = ["ObservabilityOnly=true:NoSchedule"]
+}
+
 module "capimgmt_install" {
-  depends_on              = [module.capimgmt_rke2]
+  depends_on              = [module.capimgmt_agent_capi]
   source                  = "./capi_management"
   server_names            = [for node in module.capimgmt_server_nodes : node.private_name]
   
@@ -187,9 +259,14 @@ module "docker_node_exporter" {
 module "observability_install" {
   depends_on              = [
     module.capimgmt_install,
-    module.docker_node_exporter
+    module.docker_node_exporter,
+    module.capimgmt_agent_observability
   ]
   source                  = "./observability"
 
   docker_hosts = [for node in module.docker_hosts : node.private_name]
+
+  node_label_name = "testing.rancherlabs.io/role"
+  node_label_value = "observability"
+  node_toleration = "ObservabilityOnly"
 }

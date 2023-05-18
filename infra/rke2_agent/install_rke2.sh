@@ -49,6 +49,18 @@ tls-san:
 %{ endfor ~}
 kubelet-arg: "config=/etc/rancher/rke2/kubelet-custom.config"
 kube-controller-manager-arg: "node-cidr-mask-size=${node_cidr_mask_size}"
+%{ if length(node_labels) > 0 ~}
+node-label:
+%{ for label in node_labels ~}
+  - ${jsonencode(label)}
+%{ endfor ~}
+%{endif ~}
+%{ if length(node_taints) > 0 ~}
+node-taint:
+%{ for taint in node_taints ~}
+  - ${jsonencode(taint)}
+%{ endfor ~}
+%{endif ~}
 EOF
 
 cat > /etc/rancher/rke2/kubelet-custom.config <<EOF
@@ -69,8 +81,8 @@ EOF
 
 # installation
 export INSTALL_RKE2_VERSION=${rke2_version}
-export INSTALL_RKE2_TYPE=${type}
+export INSTALL_RKE2_TYPE=agent
 
 curl -sfL https://get.rke2.io | sh -
-systemctl enable rke2-${type}.service
-systemctl restart rke2-${type}.service
+systemctl enable rke2-agent.service
+systemctl restart rke2-agent.service

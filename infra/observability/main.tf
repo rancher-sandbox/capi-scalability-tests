@@ -25,6 +25,9 @@ resource "helm_release" "prometheus-stack" {
   values = [
     "${templatefile("${path.module}/values.tftpl", {
       docker_hosts = var.docker_hosts
+      node_label_name = var.node_label_name
+      node_label_value = var.node_label_value
+      node_toleration = var.node_toleration
   })}"
   ]
 

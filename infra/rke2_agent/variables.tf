@@ -13,9 +13,9 @@ variable "name" {
   type        = string
 }
 
-variable "server_names" {
-  description = "List of names of server nodes to deploy"
-  type        = list(string)
+variable "server_name" {
+  description = "The name of the server to join the agents to"
+  type        = string
 }
 
 variable "agent_names" {
@@ -26,6 +26,18 @@ variable "agent_names" {
 
 variable "sans" {
   description = "Additional Subject Alternative Names"
+  type        = list(string)
+  default     = []
+}
+
+variable "node_labels" {
+  description = "List of labels to use fro the agent nodes"
+  type        = list(string)
+  default     = []
+}
+
+variable "node_taints" {
+  description = "List of taints to use fro the agent nodes"
   type        = list(string)
   default     = []
 }
@@ -85,5 +97,10 @@ variable "master_user_cert" {
 }
 variable "master_user_key" {
   description = "Master user key"
+  type        = string
+}
+
+variable "registration_token" {
+  description = "RKE2 registration token"
   type        = string
 }

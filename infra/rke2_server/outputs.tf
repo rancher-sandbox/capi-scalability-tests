@@ -1,3 +1,7 @@
+output "registration_token" {
+  value = ssh_sensitive_resource.first_server_installation[0].result
+}
+
 resource "local_file" "kubeconfig" {
   content = yamlencode({
     apiVersion = "v1"

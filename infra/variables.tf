@@ -50,6 +50,11 @@ variable "capimgmt_agent_count" {
   default = 0
 }
 
+variable "capimgmt_agent_observability_count" {
+  type    = number
+  default = 0
+}
+
 variable "capimgmt_rke2_version" {
   type    = string
   default = "v1.23.10+rke2r1"
