@@ -1,4 +1,13 @@
 providers:
+  - name: "cluster-api"
+    url: "https://github.com/richardcase/cluster-api/releases/v99.1.0-rich2/core-components.yaml"
+    type: "CoreProvider"
+  - name: "kubeadm"
+    url: "https://github.com/richardcase/cluster-api/releases/v99.1.0-rich2/bootstrap-components.yaml"
+    type: "BootstrapProvider"
+  - name: "kubeadm"
+    url: "https://github.com/richardcase/cluster-api/releases/v99.1.0-rich2/control-plane-components.yaml"
+    type: "ControlPlaneProvider"
   - name: "docker-rich"
     url: "https://github.com/richardcase/cluster-api/releases/v99.1.0-rich2/infrastructure-components-development.yaml"
     type: "InfrastructureProvider"

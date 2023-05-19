@@ -4,10 +4,28 @@ variable "project_name" {
   nullable    = false
 }
 
+variable "capi_core_version" {
+  description = "The core CAPI provider version"
+  type = string
+  default     = "cluster-api:v99.1.0-rich2"
+}
+
 variable "capi_infra_providers" {
   description = "The CAPI infratrsucture providers to enable"
   type        = string
   default     = "docker-rich:v99.1.0-rich2"
+}
+
+variable "capi_bootstrap_providers" {
+  description = "The CAPI bootstrap providers to enable (comma separate)"
+  type = string
+  default = "kubeadm:v99.1.0-rich2"
+}
+
+variable "capi_controlplane_providers" {
+  description = "The CAPI controlplane providers to enable (comma separate)"
+  type = string
+  default = "kubeadm:v99.1.0-rich2"
 }
 
 variable "region" {

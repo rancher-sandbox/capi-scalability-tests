@@ -3,8 +3,23 @@ variable "server_names" {
   type        = list(string)
 }
 
+variable "capi_core_version" {
+  description = "The core CAPI provider version"
+  type = string
+}
+
 variable "capi_infra_providers" {
-  description = "The CAPI infratrsucture providers to enable"
+  description = "The CAPI infrastructure providers to enable (comma separate)"
+  type = string
+}
+
+variable "capi_bootstrap_providers" {
+  description = "The CAPI bootstrap providers to enable (comma separate)"
+  type = string
+}
+
+variable "capi_controlplane_providers" {
+  description = "The CAPI controlplane providers to enable (comma separate)"
   type = string
 }
 

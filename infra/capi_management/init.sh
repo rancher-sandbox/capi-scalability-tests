@@ -27,4 +27,10 @@ export CAPD_API_BURST=${capi_kube_api_burst}
 
 
 
-/root/clusterctl init --kubeconfig /etc/rancher/rke2/rke2.yaml --config /root/clusterctl.yaml --infrastructure ${capi_infra_providers}
+/root/clusterctl init \
+    --kubeconfig /etc/rancher/rke2/rke2.yaml \
+    --config /root/clusterctl.yaml \
+    --infrastructure ${capi_infra_providers} \
+    --core ${capi_core_version} \
+    --bootstrap ${capi_bootstrap_providers} \
+    --control-plane ${capi_controlplane_providers}

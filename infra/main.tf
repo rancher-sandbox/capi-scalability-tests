@@ -208,10 +208,13 @@ module "capimgmt_install" {
   source                  = "./capi_management"
   server_names            = [for node in module.capimgmt_server_nodes : node.private_name]
   
-  capi_infra_providers    = var.capi_infra_providers
-  capi_kube_api_burst     = var.capi_kube_api_burst
-  capi_kube_api_qps       = var.capi_kube_api_qps
-  capi_concurrency        = var.capi_concurrency
+  capi_infra_providers        = var.capi_infra_providers
+  capi_core_version           = var.capi_core_version
+  capi_bootstrap_providers    = var.capi_bootstrap_providers
+  capi_controlplane_providers = var.capi_controlplane_providers
+  capi_kube_api_burst         = var.capi_kube_api_burst
+  capi_kube_api_qps           = var.capi_kube_api_qps
+  capi_concurrency            = var.capi_concurrency
   
   ssh_private_key_path    = var.ssh_private_key_path
   ssh_bastion_host        = module.bastion.public_name
