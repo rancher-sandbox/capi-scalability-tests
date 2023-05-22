@@ -17,9 +17,9 @@ kube-state-metrics:
       - apiGroups: ["controlplane.cluster.x-k8s.io"]
         resources: ["kubeadmcontrolplanes"]
         verbs: ["get", "list", "watch"]
-
 prometheus:
   prometheusSpec:
+    enableAdminAPI: true
 %{ if node_label_name != "" ~}
     affinity:
       nodeAffinity:
