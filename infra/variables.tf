@@ -146,3 +146,9 @@ variable "capi_kube_api_burst" {
   type        = number
   default     = 30
 }
+
+variable "aws_managed_prometheus_workspace" {
+  description = "The name of the AWS Managed prometheus workspace for this test."
+  type        = string
+  nullable    = false
+}

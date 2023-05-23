@@ -24,10 +24,12 @@ resource "helm_release" "prometheus-stack" {
 
   values = [
     "${templatefile("${path.module}/values.tftpl", {
-      docker_hosts = var.docker_hosts
-      node_label_name = var.node_label_name
-      node_label_value = var.node_label_value
-      node_toleration = var.node_toleration
+      docker_hosts                     = var.docker_hosts
+      node_label_name                  = var.node_label_name
+      node_label_value                 = var.node_label_value
+      node_toleration                  = var.node_toleration
+      aws_managed_prometheus_workspace = var.aws_managed_prometheus_workspace
+      aws_managed_prometheus_region    = var.aws_managed_prometheus_region
   })}"
   ]
 

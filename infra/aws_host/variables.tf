@@ -57,3 +57,9 @@ variable "root_volume_size_gb" {
   description = "Size of the root volume"
   default     = 50
 }
+
+variable "iam_instance_profile" {
+  description = "The IAM profile to launch the node with"
+  type        = string
+  default     = ""
+}
