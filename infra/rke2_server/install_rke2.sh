@@ -49,6 +49,7 @@ tls-san:
 %{ endfor ~}
 kubelet-arg: "config=/etc/rancher/rke2/kubelet-custom.config"
 kube-controller-manager-arg: "node-cidr-mask-size=${node_cidr_mask_size}"
+etcd-expose-metrics: true
 EOF
 
 cat > /etc/rancher/rke2/kubelet-custom.config <<EOF
