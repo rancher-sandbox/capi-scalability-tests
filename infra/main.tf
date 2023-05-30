@@ -119,6 +119,7 @@ module "capimgmt_agent_nodes_observability" {
   subnet_id             = module.aws_network.private_subnet_id
   vpc_security_group_id = module.aws_network.private_security_group_id
   ssh_bastion_host      = module.bastion.public_name
+  iam_instance_profile  = module.aws_shared.prom_policy
 }
 
 module "capimgmt_server" {
@@ -272,4 +273,7 @@ module "observability_install" {
   node_label_name = "testing.rancherlabs.io/role"
   node_label_value = "observability"
   node_toleration = "ObservabilityOnly"
+
+  aws_managed_prometheus_region    = var.region
+  aws_managed_prometheus_workspace = var.aws_managed_prometheus_workspace
 }

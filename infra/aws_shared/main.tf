@@ -48,14 +48,49 @@ resource "aws_key_pair" "key_pair" {
   }
 }
 
-output "key_name" {
-  value = aws_key_pair.key_pair.key_name
+resource "aws_iam_policy" "prom_policy" {
+  name = "${var.project_name}-prom-node-policy"
+  path = "/"
+  description = "A policy for use with the agents nodes running prometheus so they can remote write"
+  policy = jsonencode({
+    Version: "2012-10-17"
+    Statement: [
+        {
+            Effect: "Allow",
+            Action: [
+                "aps:RemoteWrite"
+            ],
+            Resource: "*",
+        }
+    ]
+  })
 }
 
-# output "latest_sles_ami" {
-#   value = data.aws_ami.sles15sp4
-# }
-
-output "latest_ubuntu_ami" {
-  value = data.aws_ami.ubuntu
+resource "aws_iam_role" "prom_role" {
+  name = "${var.project_name}-prom-node-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
 }
+
+resource "aws_iam_policy_attachment" "prom_policy_role" {
+  name       = "${var.project_name}-prom-node-attachment"
+  roles      = [aws_iam_role.prom_role.name]
+  policy_arn = aws_iam_policy.prom_policy.arn
+}
+
+resource "aws_iam_instance_profile" "prom_profile" {
+  name = "${var.project_name}-prom-node-profile"
+  role = aws_iam_role.prom_role.name
+}
+

@@ -68,6 +68,15 @@ prometheus:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
+    remote_write:
+      - url: https://aps-workspaces.${aws_managed_prometheus_region}.amazonaws.com/workspaces/${aws_managed_prometheus_workspace}/api/v1/remote_write
+        queue_config:
+          max_samples_per_send: 1000
+          max_shards: 200
+          capacity: 2500
+        sigv4:
+          region: ${aws_managed_prometheus_region}
+
 
 # Don't enable alert manager
 alertmanager:
